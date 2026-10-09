@@ -24,10 +24,13 @@ fi
 # make deploys look in the wrong build directory.
 WASM_DIR="target/wasm32v1-none/release"  # wasm32v1-none replaced the legacy wasm32-unknown-unknown target (soroban-sdk 25.x+)
 
-# Save a pre-deploy snapshot so rollback.sh can restore the last known good state
+# Save an internally consistent pair of pre-deploy snapshots, before building.
 if [[ -f ".env.contracts" ]]; then
-  cp .env.contracts .env.contracts.snapshot
-  echo "==> Pre-deploy snapshot saved to .env.contracts.snapshot"
+  python3 scripts/contract-env-pair.py snapshot "$NETWORK"
+  echo "==> Pre-deploy snapshots saved: .env.contracts.snapshot and .env.contracts.json.snapshot"
+else
+  # First deployment cannot roll back to a prior deployment's stale snapshots.
+  rm -f .env.contracts.snapshot .env.contracts.json.snapshot
 fi
 
 if command -v sha256sum >/dev/null 2>&1; then
@@ -102,5 +105,5 @@ EOF
 
 echo ""
 echo "==> All contracts deployed. IDs saved to .env.contracts"
-echo "    Pre-deploy snapshot is at .env.contracts.snapshot"
+echo "    Pre-deploy snapshots: .env.contracts.snapshot and .env.contracts.json.snapshot"
 echo "    To roll back: ./scripts/rollback.sh $NETWORK"
